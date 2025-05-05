@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<ITripsService, TripsService>();
+builder.Services.AddScoped<IClientsService, ClientsService>();
 
 
 builder.Services.AddEndpointsApiExplorer();

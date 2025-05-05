@@ -1,4 +1,6 @@
-﻿namespace lab08.Models.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace lab08.Models.DTOs;
 
 public class TripDto
 {
@@ -14,4 +16,28 @@ public class TripDto
 public class CountryDto
 {
     public string Name { get; set; }
+}
+
+public class ClientTripDto : TripDto
+{
+    public int RegisteredAt { get; set; }
+    public int? PaymentDate { get; set; }
+}
+
+public class CreateClientDto
+{
+    [Required]
+    [StringLength(50)]
+    public string FirstName { get; set; }
+    [Required]
+    [StringLength(50)]
+    public string LastName { get; set; }
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; }
+    [Required]
+    [Phone]
+    public string Telephone { get; set; }
+    [Required]
+    public string Pesel { get; set; }
 }

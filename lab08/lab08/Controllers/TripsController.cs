@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using lab08.Services;
 
@@ -23,14 +22,11 @@ namespace lab08.Controllers
             return Ok(trips);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("clients/{id}/trips")]
         public async Task<IActionResult> GetTrip(int id)
         {
-            // if( await DoesTripExist(id)){
-            //  return NotFound();
-            // }
-            // var trip = ... GetTrip(id);
-            return Ok();
+            var trips = await _tripsService.GetTripsByClientId(id);
+            return Ok(trips);
         }
     }
 }
