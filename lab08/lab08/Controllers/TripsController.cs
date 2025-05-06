@@ -1,3 +1,4 @@
+using lab08.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using lab08.Services;
 
@@ -17,16 +18,34 @@ namespace lab08.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTrips()
         {
-            var trips = await _tripsService.GetTrips();
-            Console.WriteLine(trips);
-            return Ok(trips);
+            try
+            {
+                var trips = await _tripsService.GetTrips();
+                Console.WriteLine(trips);
+                return Ok(trips);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpGet("clients/{id}/trips")]
         public async Task<IActionResult> GetTrip(int id)
         {
-            var trips = await _tripsService.GetTripsByClientId(id);
-            return Ok(trips);
+            try
+            {
+                var trips = await _tripsService.GetTripsByClientId(id);
+                return Ok(trips);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }

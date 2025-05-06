@@ -1,4 +1,5 @@
-﻿using lab08.Models.DTOs;
+﻿using lab08.Exceptions;
+using lab08.Models.DTOs;
 using lab08.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,6 +36,46 @@ public class ClientsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return Conflict(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpPut("{id}/trips/{tripId}")]
+    public async Task<IActionResult> Put(int id, int tripId)
+    {
+        try
+        {
+            await _clientsService.RegisterClientForTrip(id, tripId);
+            return CreatedAtAction(nameof(Put), new { id, tripId }, new { IdClient = id, TripId = tripId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
+
+    [HttpDelete("{id}/trips/{tripId}")]
+    public async Task<IActionResult> Delete(int id, int tripId)
+    {
+        try
+        {
+            await _clientsService.DeleteClientFromTrip(id, tripId);
+            return Ok();
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ex.Message);
         }
         catch (Exception ex)
         {

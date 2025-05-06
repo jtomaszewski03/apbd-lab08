@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using lab08.Exceptions;
+using Microsoft.Data.SqlClient;
 using lab08.Models.DTOs;
 
 namespace lab08.Services;
@@ -79,7 +80,7 @@ public class TripsService : ITripsService
             var clientExists = await cmd.ExecuteScalarAsync();
             if (clientExists == null)
             {
-                throw new Exception("Client not found");
+                throw new NotFoundException("Client not found");
             }
         }
 
@@ -117,7 +118,7 @@ public class TripsService : ITripsService
 
             if (clientTrips.Values.Count == 0)
             {
-                throw new Exception("No trips found");
+                throw new NotFoundException("No trips found");
             }
             return clientTrips.Values.ToList();
         }
