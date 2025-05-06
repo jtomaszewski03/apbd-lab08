@@ -6,7 +6,7 @@ namespace lab08.Services;
 
 public class TripsService : ITripsService
 {
-    private readonly string _connectionString;
+    private readonly string? _connectionString;
 
     public TripsService(IConfiguration configuration)
     {
@@ -25,12 +25,12 @@ public class TripsService : ITripsService
         JOIN Country c ON ct.IdCountry = c.IdCountry
         ORDER BY t.IdTrip";
 
-        using (SqlConnection conn = new SqlConnection(_connectionString))
-        using (SqlCommand cmd = new SqlCommand(command, conn))
+        await using (SqlConnection conn = new SqlConnection(_connectionString))
+        await using (SqlCommand cmd = new SqlCommand(command, conn))
         {
             await conn.OpenAsync();
 
-            using (var reader = await cmd.ExecuteReaderAsync())
+            await using (var reader = await cmd.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
                 {
@@ -89,7 +89,7 @@ public class TripsService : ITripsService
             cmd.Parameters.AddWithValue("@id", id);
             var clientTrips = new Dictionary<int, ClientTripDto>();
 
-            using (var reader = await cmd.ExecuteReaderAsync())
+            await using (var reader = await cmd.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
                 {

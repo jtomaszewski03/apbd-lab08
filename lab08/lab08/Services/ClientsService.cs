@@ -6,7 +6,7 @@ namespace lab08.Services;
 
 public class ClientsService : IClientsService
 {
-    private readonly string _connectionString;
+    private readonly string? _connectionString;
 
     public ClientsService(IConfiguration configuration)
     {
@@ -39,7 +39,7 @@ public class ClientsService : IClientsService
             cmd.Parameters.AddWithValue("@Telephone", createClientDto.Telephone);
             cmd.Parameters.AddWithValue("@Pesel", createClientDto.Pesel);
             
-            var clientId = (int) await cmd.ExecuteScalarAsync();
+            var clientId = (int) (await cmd.ExecuteScalarAsync() ?? throw new Exception());
             return clientId;
         }
     }
@@ -57,8 +57,8 @@ public class ClientsService : IClientsService
                 throw new NotFoundException("Client not found.");
             }
         }
-        
-        await using (var cmd = new SqlCommand("SELECT 1 FROM Trip WHERE IdTrip = @tripId", conn))
+        int maxPeople;
+        await using (var cmd = new SqlCommand("SELECT MaxPeople FROM Trip WHERE IdTrip = @tripId", conn))
         {
             cmd.Parameters.AddWithValue("@tripId", tripId);
             var reader = await cmd.ExecuteScalarAsync();
@@ -66,53 +66,58 @@ public class ClientsService : IClientsService
             {
                 throw new NotFoundException("Trip not found.");
             }
+
+            maxPeople = Convert.ToInt32(reader);
         }
 
+        bool alreadyExists;
+        int currentDate = int.Parse(DateTime.Now.ToString("yyyyMMdd"));
+        int paymentDate = int.Parse(DateTime.Now.AddDays(10).ToString("yyyyMMdd"));
         await using (var cmd = new SqlCommand("SELECT 1 FROM Client_Trip WHERE IdClient = @id AND IdTrip = @tripId",
                          conn))
         {
             cmd.Parameters.AddWithValue("@id", id);
             cmd.Parameters.AddWithValue("@tripId", tripId);
             var reader = await cmd.ExecuteScalarAsync();
-            if (reader != null)
+            alreadyExists = reader != null && reader != DBNull.Value;
+        }
+
+        if (alreadyExists)
+        {
+            await using (var cmd = new SqlCommand(
+                             @"UPDATE Client_Trip SET RegisteredAt = @date, PaymentDate = @paymentDate WHERE IdClient = @id
+                                        AND IdTrip = @tripId", conn))
             {
-                throw new InvalidOperationException($"Client {id} is already registered on trip {tripId}");
+                cmd.Parameters.AddWithValue("@date", currentDate);
+                cmd.Parameters.AddWithValue("@paymentDate", paymentDate);
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.Parameters.AddWithValue("@tripId", tripId);
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+        else
+        {
+            await using (var cmd = new SqlCommand("SELECT Count(*) FROM Client_Trip WHERE IdTrip = @tripId", conn))
+            {
+                cmd.Parameters.AddWithValue("@tripId", tripId);
+                int peopleCount = (int)(await cmd.ExecuteScalarAsync() ?? throw new Exception());
+                if (peopleCount >= maxPeople)
+                {
+                    throw new InvalidOperationException($"Trip {tripId} has reached its maximum people limit.");
+                }
+            }
+
+            string command = @"INSERT INTO Client_Trip VALUES (@idClient, @idTrip, @date, @paymentDate)";
+            await using (var cmd = new SqlCommand(command, conn))
+            {
+                cmd.Parameters.AddWithValue("@idClient", id);
+                cmd.Parameters.AddWithValue("@idTrip", tripId);
+                cmd.Parameters.AddWithValue("@date", currentDate);
+                cmd.Parameters.AddWithValue("@paymentDate", paymentDate);
+                await cmd.ExecuteNonQueryAsync();
             }
         }
 
-        int maxPeople = 0;
-        await using (var cmd = new SqlCommand("SELECT MaxPeople FROM Trip WHERE IdTrip = @tripId", conn))
-        {
-            cmd.Parameters.AddWithValue("@tripId", tripId);
-            var result = await cmd.ExecuteScalarAsync();
-            if (result == null || result == DBNull.Value)
-            {
-                throw new NotFoundException($"Trip {tripId} does not exist.");
-            }
-            maxPeople = Convert.ToInt32(result);
-        }
-
-        await using (var cmd = new SqlCommand("SELECT Count(*) FROM Client_Trip WHERE IdTrip = @tripId", conn))
-        {
-            cmd.Parameters.AddWithValue("@tripId", tripId);
-            int peopleCount = (int) await cmd.ExecuteScalarAsync();
-            if (peopleCount >= maxPeople)
-            {
-                throw new InvalidOperationException($"Trip {tripId} has reached its maximum people limit.");
-            }
-        }
-        int currentDate = int.Parse(DateTime.Now.ToString("yyyyMMdd"));
-        int paymentDate = int.Parse(DateTime.Now.AddDays(10).ToString("yyyyMMdd"));
-        string command = @"INSERT INTO Client_Trip VALUES (@idClient, @idTrip, @date, @paymentDate)";
-        await using (var cmd = new SqlCommand(command, conn))
-        {
-            cmd.Parameters.AddWithValue("@idClient", id);
-            cmd.Parameters.AddWithValue("@idTrip", tripId);
-            cmd.Parameters.AddWithValue("@date", currentDate);
-            cmd.Parameters.AddWithValue("@paymentDate", paymentDate);
-            await cmd.ExecuteNonQueryAsync();
-        }
-        
     }
 
     public async Task DeleteClientFromTrip(int id, int tripId)
