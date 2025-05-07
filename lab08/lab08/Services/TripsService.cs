@@ -22,8 +22,7 @@ public class TripsService : ITripsService
                c.Name AS CountryName
         FROM Trip t
         JOIN Country_Trip ct ON t.IdTrip = ct.IdTrip
-        JOIN Country c ON ct.IdCountry = c.IdCountry
-        ORDER BY t.IdTrip";
+        JOIN Country c ON ct.IdCountry = c.IdCountry";
 
         await using (SqlConnection conn = new SqlConnection(_connectionString))
         await using (SqlCommand cmd = new SqlCommand(command, conn))
@@ -68,8 +67,7 @@ public class TripsService : ITripsService
         JOIN Client_Trip ct ON t.IdTrip = ct.IdTrip
         JOIN Country_Trip ctr ON t.IdTrip = ctr.IdTrip
         JOIN Country c ON ctr.IdCountry = c.IdCountry
-        WHERE ct.IdClient = @id
-        ORDER BY t.IdTrip";
+        WHERE ct.IdClient = @id";
 
         await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
